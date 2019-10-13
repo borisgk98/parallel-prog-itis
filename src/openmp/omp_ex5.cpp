@@ -2,10 +2,6 @@
 // Created by boris on 13.10.19.
 //
 
-//
-// Created by boris on 13.10.19.
-//
-
 #include <random>
 #include <ctime>
 #include <climits>
@@ -33,7 +29,7 @@ void omp_ex5() {
                 }
             }
 #pragma omp critical
-            printf("Thread: %d, avg = %d\n", omp_get_thread_num(), sum / (sy * sx));
+            printf("Thread: %d, avg = %f\n", omp_get_thread_num(), (double) sum / (sy * sx));
         }
 #pragma omp section
         {

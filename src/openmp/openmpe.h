@@ -3,3 +3,7 @@ void omp_ex2();
 void omp_ex3();
 void omp_ex4();
 void omp_ex5();
+void omp_ex6();
+void omp_ex7();
+void omp_ex8();
+void omp_ex9();
