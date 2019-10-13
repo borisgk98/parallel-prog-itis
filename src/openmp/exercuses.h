@@ -1,1 +1,0 @@
-double compute_pi();

@@ -21,8 +21,8 @@ file(GLOB all_openmp_SRCS
         "${PROJECT_SOURCE_DIR}/src/openmp/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/openmp/*.h"
         )
-add_library(openmp STATIC ${all_openmp_SRCS})
+add_library(openmp STATIC ${all_openmp_SRCS} src/openmp/omp_ex1.cpp src/openmp/omp_ex2.cpp src/openmp/omp_ex3.cpp src/openmp/omp_ex4.cpp src/openmp/omp_ex5.cpp src/openmp/omp_ex6.cpp)
 
 add_executable(main ${SOURCES_EXE})
 
-target_link_libraries(main examples openmp MPI_C)
+target_link_libraries(main examples openmp)
