@@ -99,7 +99,7 @@ void omp_ex8() {
         a[i] = i;
     }
     bool debug = false;
-    int block_size = 4;
+    int block_size = 1000;
     parallel_static(a, size, block_size, debug);
     parallel_dynamic(a, size, block_size, debug);
     parallel_guided(a, size, block_size, debug);

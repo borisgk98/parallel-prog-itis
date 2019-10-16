@@ -24,12 +24,15 @@ void omp_ex10() {
     int min = INT_MAX, max = INT_MIN;
 #pragma omp parallel for
     for (int i = 0; i < sx; i++) {
-#pragma omp parallel for
         for (int j = 0; j < sy; j++) {
-//#pragma omp critical
-            min = std::min(min, d[i][j]);
-//#pragma omp critical
-            max = std::max(max, d[i][j]);
+            if (d[i][j] < min) {
+#pragma omp critical
+                min = d[i][j];
+            }
+            if (d[i][j] > max) {
+#pragma omp critical
+                max = d[i][j];
+            }
         }
     }
     printf("max = %d, min = %d", max, min);

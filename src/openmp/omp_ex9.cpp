@@ -27,7 +27,6 @@ vector<int> compute_parallel(vector<vector<int>> &matrix, vector<int> &v) {
 #pragma omp parallel for schedule(guided,8)
     for (int i = 0; i < matrix.size(); i++) {
         int sum = 0;
-#pragma omp parallel for schedule(guided,8)
         for (int j = 0; j < matrix[i].size(); j++) {
             sum += v[i] * matrix[i][j];
         }
@@ -68,7 +67,7 @@ void omp_ex9() {
     omp_set_num_threads(8);
     mt19937 gen(time(0));
     bool debug = false;
-    int sx = 60, sy = 70;
+    int sx = 6000, sy = 7000;
     auto matrix = vector<vector<int>>(sx, vector<int>(sy));
     for (int i = 0; i < sx; i++) {
         for (int j = 0; j < sy; j++) {
