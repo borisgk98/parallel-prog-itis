@@ -3,6 +3,6 @@
 #include <iostream>
 
 int main() {
-    omp_ex9();
+    omp_ex13();
 //	system("sleep 3");
 }
