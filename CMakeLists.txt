@@ -15,7 +15,7 @@ set(CMAKE_CXX_COMPILER "/usr/bin/mpic++")
 include_directories(/usr/include/mpi/)
 
 
-set(SOURCES_EXE src/main.cpp src/mpi/mpie.h src/mpi/mpi_ex1.cpp)
+set(SOURCES_EXE src/main.cpp src/mpi/mpie.h src/mpi/mpi_ex1.cpp src/mpi/mpi_ex2.cpp src/mpi/map.cpp)
 file(GLOB all_examples_SRCS
         "${PROJECT_SOURCE_DIR}/src/openmp/examples/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/openmp/examples/*.h"

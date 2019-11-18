@@ -6,5 +6,6 @@
 #define PARALLEL_ITIS_2019_MPIE_H
 
 void mpi_ex1();
+void mpi_ex2();
 
 #endif //PARALLEL_ITIS_2019_MPIE_H
