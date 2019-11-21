@@ -3,7 +3,7 @@
 //
 
 #include <iostream>
-#include "/usr/include/mpich/mpi.h"
+#include "/opt/mpich2/include/mpi.h"
 using namespace std;
 
 void mpi_ex1() {

@@ -10,12 +10,12 @@ set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 # MPI
-set(CMAKE_C_COMPILER "/usr/bin/mpicc")
-set(CMAKE_CXX_COMPILER "/usr/bin/mpic++")
-include_directories(/usr/include/mpi/)
+set(CMAKE_C_COMPILER "/opt/mpich2/bin/mpicc")
+set(CMAKE_CXX_COMPILER "/opt/mpich2/bin/mpic++")
+include_directories(/opt/mpich2/include)
 
 
-set(SOURCES_EXE src/main.cpp src/mpi/mpie.h src/mpi/mpi_ex1.cpp src/mpi/mpi_ex2.cpp src/mpi/map.cpp)
+set(SOURCES_EXE src/main.cpp src/mpi/mpie.h src/mpi/mpi_ex1.cpp src/mpi/mpi_ex2.cpp src/mpi/map.cpp src/mpi/mpi_ex3.cpp src/mpi/mpi_ex4.cpp src/mpi/mpi_ex5.cpp src/mpi/mpi_ex6.cpp)
 file(GLOB all_examples_SRCS
         "${PROJECT_SOURCE_DIR}/src/openmp/examples/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/openmp/examples/*.h"
@@ -29,4 +29,4 @@ add_library(openmp STATIC ${all_openmp_SRCS} src/openmp/omp_ex1.cpp src/openmp/o
 
 add_executable(main ${SOURCES_EXE})
 
-target_link_libraries(main examples openmp mpi)
+target_link_libraries(main examples openmp /opt/mpich2/include)
