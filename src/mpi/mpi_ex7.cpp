@@ -151,7 +151,7 @@ void mpi_ex7() {
 //    }
 //    MPI_Finalize();
 
-    const int N = 20;
+    const int N = 3;
     int rank, size, procN;
     double a[N*N], b[N], c[N];
     double *procA, *procC;
