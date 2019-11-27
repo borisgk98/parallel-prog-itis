@@ -12,6 +12,7 @@ void mpi_ex4();
 void mpi_ex5();
 void mpi_ex6();
 void mpi_ex7();
+void mpi_ex8();
 
 
 #endif //PARALLEL_ITIS_2019_MPIE_H

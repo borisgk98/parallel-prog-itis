@@ -7,5 +7,5 @@
 using namespace std;
 
 int main() {
-    mpi_ex7();
+    mpi_ex8();
 }
