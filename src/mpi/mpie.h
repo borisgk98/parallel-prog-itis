@@ -16,6 +16,8 @@ void mpi_ex6();
 void mpi_ex7();
 void mpi_ex8();
 
+void qsort();
+
 // graph
 void djikstra();
 void prima();
