@@ -12,63 +12,22 @@
 
 #define INFINITY 1000000
 
-void prima_init(int *loc_mat, int *loc_pred, int *loc_known,
-                int my_rank, int loc_n);
-void prima_compute(int *mat, int *pred, int n,
-                   MPI_Comm comm, int num, int my_rank);
-std::tuple<int, int, int> find_min_vert(int *mat, int *know, int n, int num, int rank);
-void print_result(int global_pred[], int n);
 
-void prima() {
-    int *loc_mat, *loc_dist, *loc_pred, *global_dist = NULL, *global_pred = NULL;
-    int my_rank, p, loc_n, n;
-    MPI_Comm comm;
-    MPI_Datatype blk_col_mpi_t;
+void print_result(int global_pred[], int n) {
+    int v, w, *path, count, i;
 
-    MPI_Init(NULL, NULL);
-    comm = MPI_COMM_WORLD;
-    MPI_Comm_rank(comm, &my_rank);
-    MPI_Comm_size(comm, &p);
-    n = Read_n(my_rank, comm);
-    loc_n = n / p;
-    loc_mat = static_cast<int *>(malloc(n * loc_n * sizeof(int)));
-    loc_dist = static_cast<int *>(malloc(loc_n * sizeof(int)));
-    loc_pred = static_cast<int *>(malloc(loc_n * sizeof(int)));
-    blk_col_mpi_t = Build_blk_col_type(n, loc_n);
+    path = static_cast<int *>(malloc(n * sizeof(int)));
 
-    if (my_rank == 0) {
-        global_dist = static_cast<int *>(malloc(n * sizeof(int)));
-        global_pred = static_cast<int *>(malloc(n * sizeof(int)));
+    printf("  Result tree\n");
+    printf("----    ---------\n");
+    for (v = 1; v < n; v++) {
+        printf("%d - %d\n", v, global_pred[v]);
     }
-    Read_matrix(loc_mat, n, loc_n, blk_col_mpi_t, my_rank, comm);
 
-    MPI_Barrier(comm);
-    for (int j = 0; j < p; j++) {
-        if (my_rank == j) {
-            Print_matrix(loc_mat, n, n);
-        }
-        MPI_Barrier(comm);
-    }
-    prima_compute(loc_mat, loc_pred, n, comm, p, my_rank);
-
-    /* Gather the results from Dijkstra */
-    MPI_Gather(loc_dist, loc_n, MPI_INT, global_dist, loc_n, MPI_INT, 0, comm);
-    MPI_Gather(loc_pred, loc_n, MPI_INT, global_pred, loc_n, MPI_INT, 0, comm);
-
-    /* Print results */
-    if (my_rank == 0) {
-        print_result(global_pred, n);
-        free(global_dist);
-        free(global_pred);
-    }
-    free(loc_mat);
-    free(loc_pred);
-    free(loc_dist);
-    MPI_Type_free(&blk_col_mpi_t);
-    MPI_Finalize();
+    free(path);
 }
 
-void prima_init(int *loc_mat, int *loc_pred, int *loc_known,
+void prima_init(int loc_mat[], int loc_pred[], int loc_dist[], int loc_known[],
                 int my_rank, int loc_n) {
     int loc_v;
 
@@ -81,34 +40,25 @@ void prima_init(int *loc_mat, int *loc_pred, int *loc_known,
         loc_known[loc_v] = 0;
 
     for (loc_v = 0; loc_v < loc_n; loc_v++) {
+        loc_dist[loc_v] = loc_mat[0 * loc_n + loc_v];
         loc_pred[loc_v] = 0;
     }
 }
 
-void prima_compute(int *mat, int *pred, int n,
-                   MPI_Comm comm, int num, int my_rank) {
-    int i;
-    int *known;
 
-    known = static_cast<int *>(malloc(n * sizeof(int)));
+int find_min_dist(int loc_dist[], int loc_known[], int loc_n) {
+    int loc_u = -1, loc_v;
+    int shortest_dist = INFINITY;
 
-    prima_init(mat, pred, known, my_rank, n);
-
-    for (i = 0; i < n - 1; i++) {
-        // ищем минимальное ребро среди еще не просмотренных вершин
-        std::tuple<int, int, int> v = find_min_vert(mat, known, n, num, my_rank);
-        MPI_Barrier(comm);
-
-        int x = std::get<0>(v), y = std::get<1>(v), s = std::get<2>(v);
-//        std::printf("%d %d %d\n", x, y, s);
-        if (s == INFINITY) {
-            break;
+    for (loc_v = 0; loc_v < loc_n; loc_v++) {
+        if (!loc_known[loc_v]) {
+            if (loc_dist[loc_v] < shortest_dist) {
+                shortest_dist = loc_dist[loc_v];
+                loc_u = loc_v;
+            }
         }
-        pred[x] = y;
-        known[x] = 1;
-        printf("\n");
     }
-    free(known);
+    return loc_u;
 }
 
 std::tuple<int, int, int> find_min_vert(int *mat, int *know, int n, int num, int rank) {
@@ -151,17 +101,115 @@ std::tuple<int, int, int> find_min_vert(int *mat, int *know, int n, int num, int
     return std::make_tuple(gv, gu, m);
 }
 
-void print_result(int global_pred[], int n) {
-    int v, w, *path, count, i;
+void prima_compute(int loc_mat[], int loc_dist[], int loc_pred[], int loc_n, int n,
+                   MPI_Comm comm) {
 
-    path = static_cast<int *>(malloc(n * sizeof(int)));
+    int i, loc_v, loc_u, glbl_u, new_dist, my_rank, dist_glbl_u;
+    int *loc_known;
+    int my_min[2];
+    int glbl_min[2];
 
-    printf("  Result tree\n");
-    printf("----    ---------\n");
-    for (v = 1; v < n; v++) {
-        printf("%d - %d\n", v, global_pred[v]);
+    MPI_Comm_rank(comm, &my_rank);
+    loc_known = static_cast<int *>(malloc(loc_n * sizeof(int)));
+
+    prima_init(loc_mat, loc_pred, loc_dist, loc_known, my_rank, loc_n);
+
+    /* Run loop n - 1 times since we already know the shortest path to global
+       vertex 0 from global vertex 0 */
+    for (i = 0; i < n - 1; i++) {
+        loc_u = find_min_dist(loc_dist, loc_known, loc_n);
+
+        if (loc_u != -1) {
+            my_min[0] = loc_dist[loc_u];
+            my_min[1] = loc_u + my_rank * loc_n;
+        }
+        else {
+            my_min[0] = INFINITY;
+            my_min[1] = -1;
+        }
+
+        /* Get the minimum distance found by the processes and store that
+           distance and the global vertex in glbl_min
+        */
+        MPI_Allreduce(my_min, glbl_min, 1, MPI_2INT, MPI_MINLOC, comm);
+
+        dist_glbl_u = glbl_min[0];
+        glbl_u = glbl_min[1];
+
+        /* This test is to assure that loc_known is not accessed with -1 */
+        if (glbl_u == -1)
+            break;
+
+        /* Check if global u belongs to process, and if so update loc_known */
+        if ((glbl_u / loc_n) == my_rank) {
+            loc_u = glbl_u % loc_n;
+            loc_known[loc_u] = 1;
+        }
+
+        /* For each local vertex (global vertex = loc_v + my_rank * loc_n)
+           Update the distances from source vertex (0) to loc_v. If vertex
+           is unmarked check if the distance from source to the global u + the
+           distance from global u to local v is smaller than the distance
+           from the source to local v
+         */
+        for (loc_v = 0; loc_v < loc_n; loc_v++) {
+            if (!loc_known[loc_v]) {
+                new_dist = dist_glbl_u + loc_mat[glbl_u * loc_n + loc_v];
+                if (new_dist < loc_dist[loc_v]) {
+                    loc_dist[loc_v] = new_dist;
+                    loc_pred[loc_v] = glbl_u;
+                }
+            }
+        }
     }
-
-    free(path);
+    free(loc_known);
 }
 
+void prima() {
+    int *loc_mat, *loc_dist, *loc_pred, *global_dist = NULL, *global_pred = NULL;
+    int my_rank, p, loc_n, n;
+    MPI_Comm comm;
+    MPI_Datatype blk_col_mpi_t;
+
+    MPI_Init(NULL, NULL);
+    comm = MPI_COMM_WORLD;
+    MPI_Comm_rank(comm, &my_rank);
+    MPI_Comm_size(comm, &p);
+    n = Read_n(my_rank, comm);
+    loc_n = n / p;
+    loc_mat = static_cast<int *>(malloc(n * loc_n * sizeof(int)));
+    loc_dist = static_cast<int *>(malloc(loc_n * sizeof(int)));
+    loc_pred = static_cast<int *>(malloc(loc_n * sizeof(int)));
+    blk_col_mpi_t = Build_blk_col_type(n, loc_n);
+
+    if (my_rank == 0) {
+        global_dist = static_cast<int *>(malloc(n * sizeof(int)));
+        global_pred = static_cast<int *>(malloc(n * sizeof(int)));
+    }
+    Read_matrix(loc_mat, n, loc_n, blk_col_mpi_t, my_rank, comm);
+
+    MPI_Barrier(comm);
+    for (int j = 0; j < p; j++) {
+        if (my_rank == j) {
+            Print_matrix(loc_mat, n, n);
+        }
+        MPI_Barrier(comm);
+    }
+    prima_compute(loc_mat, loc_dist, loc_pred, loc_n, n, comm);;
+
+    /* Gather the results from Dijkstra */
+    MPI_Gather(loc_dist, loc_n, MPI_INT, global_dist, loc_n, MPI_INT, 0, comm);
+    MPI_Gather(loc_pred, loc_n, MPI_INT, global_pred, loc_n, MPI_INT, 0, comm);
+
+    /* Print results */
+    if (my_rank == 0) {
+        print_result(global_pred, n);
+        free(global_dist);
+        free(global_pred);
+    }
+    free(loc_mat);
+    free(loc_pred);
+    free(loc_dist);
+    MPI_Type_free(&blk_col_mpi_t);
+    MPI_Finalize();
+}
