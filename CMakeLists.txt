@@ -15,7 +15,7 @@ set(CMAKE_CXX_COMPILER "/opt/mpich2/bin/mpic++")
 include_directories(/opt/mpich2/include)
 
 
-set(SOURCES_EXE src/main.cpp src/mpi/mpie.h src/mpi/mpi_ex1.cpp src/mpi/mpi_ex2.cpp src/mpi/map.cpp src/mpi/mpi_ex3.cpp src/mpi/mpi_ex4.cpp src/mpi/mpi_ex5.cpp src/mpi/mpi_ex6.cpp src/mpi/mpi_ex7.cpp src/mpi/mpi_ex8.cpp)
+set(SOURCES_EXE src/main.cpp src/mpi/mpie.h src/mpi/mpi_ex1.cpp src/mpi/mpi_ex2.cpp src/mpi/map.cpp src/mpi/mpi_ex3.cpp src/mpi/mpi_ex4.cpp src/mpi/mpi_ex5.cpp src/mpi/mpi_ex6.cpp src/mpi/mpi_ex7.cpp src/mpi/mpi_ex8.cpp src/mpi/prima.cpp src/mpi/dijkstra.cpp src/mpi/graph_tools.cpp)
 file(GLOB all_examples_SRCS
         "${PROJECT_SOURCE_DIR}/src/openmp/examples/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/openmp/examples/*.h"

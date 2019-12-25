@@ -7,5 +7,5 @@
 using namespace std;
 
 int main() {
-    mpi_ex8();
+    prima();
 }
