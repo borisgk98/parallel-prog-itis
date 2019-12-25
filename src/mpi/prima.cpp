@@ -14,8 +14,8 @@
 
 void prima_init(int *loc_mat, int *loc_pred, int *loc_known,
                 int my_rank, int loc_n);
-void prima_compute(int *mat, int *pred, int loc_n, int n,
-                   MPI_Comm comm);
+void prima_compute(int *mat, int *pred, int n,
+                   MPI_Comm comm, int num, int my_rank);
 std::tuple<int, int, int> find_min_vert(int *mat, int *know, int n, int num, int rank);
 void print_result(int global_pred[], int n);
 
@@ -41,7 +41,15 @@ void prima() {
         global_pred = static_cast<int *>(malloc(n * sizeof(int)));
     }
     Read_matrix(loc_mat, n, loc_n, blk_col_mpi_t, my_rank, comm);
-    prima_compute(loc_mat, loc_pred, loc_n, n, comm);
+
+    MPI_Barrier(comm);
+    for (int j = 0; j < p; j++) {
+        if (my_rank == j) {
+            Print_matrix(loc_mat, n, n);
+        }
+        MPI_Barrier(comm);
+    }
+    prima_compute(loc_mat, loc_pred, n, comm, p, my_rank);
 
     /* Gather the results from Dijkstra */
     MPI_Gather(loc_dist, loc_n, MPI_INT, global_dist, loc_n, MPI_INT, 0, comm);
@@ -77,29 +85,28 @@ void prima_init(int *loc_mat, int *loc_pred, int *loc_known,
     }
 }
 
-void prima_compute(int *mat, int *pred, int loc_n, int n,
-                   MPI_Comm comm) {
-
-    int i, my_rank, num;
+void prima_compute(int *mat, int *pred, int n,
+                   MPI_Comm comm, int num, int my_rank) {
+    int i;
     int *known;
 
-    MPI_Comm_rank(comm, &my_rank);
-    MPI_Comm_size(comm, &num);
-    known = static_cast<int *>(malloc(loc_n * sizeof(int)));
+    known = static_cast<int *>(malloc(n * sizeof(int)));
 
-    prima_init(mat, pred, known, my_rank, loc_n);
+    prima_init(mat, pred, known, my_rank, n);
 
     for (i = 0; i < n - 1; i++) {
         // ищем минимальное ребро среди еще не просмотренных вершин
-        std::tuple<int, int, int> v = find_min_vert(mat, known, loc_n, num, my_rank);
+        std::tuple<int, int, int> v = find_min_vert(mat, known, n, num, my_rank);
+        MPI_Barrier(comm);
 
         int x = std::get<0>(v), y = std::get<1>(v), s = std::get<2>(v);
-        std::printf("%d %d %d\n", x, y, s);
+//        std::printf("%d %d %d\n", x, y, s);
         if (s == INFINITY) {
             break;
         }
         pred[x] = y;
         known[x] = 1;
+        printf("\n");
     }
     free(known);
 }
@@ -111,11 +118,15 @@ std::tuple<int, int, int> find_min_vert(int *mat, int *know, int n, int num, int
     int ru[num], rv[num], rm[num];
     int gru[num], grv[num], grm[num];
 
-    for (int v = loc_k * rank; v < loc_k * (rank + 1); v++) {
+//    printf("%d %d %d\n", num, rank, n);
+//    printf("%d\n", loc_k);
+    for (int i = 0; i < loc_k; i++) {
+        int v = i + loc_k * rank;
+//        printf("%d\n", v);
         if (!know[v]) {
             for (int u = 0; u < n; u++) {
-                if (know[u] && mat[u * n + v] < shortest_vert) {
-                    shortest_vert = mat[u * n + v];
+                if (know[u] && mat[u + i * n] < shortest_vert) {
+                    shortest_vert = mat[u + i * n];
                     loc_u = u;
                     loc_v = v;
                     printf("%d %d %d", v, u, shortest_vert);
